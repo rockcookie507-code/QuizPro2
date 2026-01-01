@@ -19,36 +19,36 @@ export const QuizEditor: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(!isNew);
-  
-  // State for delete confirmation
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!isNew && id) {
-      const existing = StorageService.getQuiz(id);
-      if (existing) {
-        setQuiz(existing);
-      } else {
-        navigate('/admin');
-      }
-      setLoading(false);
-    }
+    const fetchQuiz = async () => {
+        if (!isNew && id) {
+          const existing = await StorageService.getQuiz(id);
+          if (existing) {
+            setQuiz(existing);
+          } else {
+            navigate('/admin');
+          }
+          setLoading(false);
+        }
+    };
+    fetchQuiz();
   }, [id, isNew, navigate]);
 
-  // Clean up timeout on unmount
   useEffect(() => {
     return () => {
       if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
     };
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!quiz.title.trim()) {
       alert("Please enter a quiz title");
       return;
     }
-    StorageService.saveQuiz(quiz);
+    await StorageService.saveQuiz(quiz);
     navigate('/admin');
   };
 
@@ -68,18 +68,14 @@ export const QuizEditor: React.FC = () => {
   const updateQuestion = (qIndex: number, field: keyof Question, value: any) => {
     setQuiz(prev => {
         const updatedQs = [...prev.questions];
-        
-        // Logic: Handle Type Switching
         if (field === 'type') {
            if (value === QuestionType.TEXT) {
-               // Switch to TEXT: Ensure only 1 option exists (keep first if exists, or create new)
                const currentOptions = updatedQs[qIndex].options;
                const newOptions = currentOptions.length > 0 
                     ? [currentOptions[0]] 
                     : [{ id: `opt_${Date.now()}`, text: '', score: 10 }];
                updatedQs[qIndex] = { ...updatedQs[qIndex], type: value, options: newOptions };
            } else {
-               // Switch to SINGLE/MULTI: Ensure at least 2 options
                let newOptions = [...updatedQs[qIndex].options];
                while (newOptions.length < 2) {
                    newOptions.push({ 
@@ -98,18 +94,14 @@ export const QuizEditor: React.FC = () => {
   };
 
   const handleDeleteClick = (index: number) => {
-    // If clicking the same button that is already confirming
     if (deleteConfirmIndex === index) {
-        // Perform delete
         if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
         setDeleteConfirmIndex(null);
-        
         setQuiz(prev => ({
             ...prev,
             questions: prev.questions.filter((_, i) => i !== index)
         }));
     } else {
-        // Start confirmation for this button
         if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
         setDeleteConfirmIndex(index);
         deleteTimeoutRef.current = setTimeout(() => {
@@ -130,7 +122,6 @@ export const QuizEditor: React.FC = () => {
     });
   };
 
-  // Option Management
   const addOption = (qIndex: number) => {
     setQuiz(prev => {
         const updatedQs = [...prev.questions];
@@ -205,7 +196,6 @@ export const QuizEditor: React.FC = () => {
         <div className="space-y-6">
           {quiz.questions.map((q, qIndex) => (
             <div key={q.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* Question Header Bar */}
               <div className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-500 uppercase">Question {qIndex + 1}</span>

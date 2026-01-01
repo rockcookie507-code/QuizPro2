@@ -13,7 +13,7 @@ export const AdminDashboard: React.FC = () => {
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Simple PIN for demo purposes (Requirement 3.1)
+  // Simple PIN for demo purposes
   const ADMIN_PIN = "1234";
 
   useEffect(() => {
@@ -25,8 +25,9 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const loadQuizzes = () => {
-    setQuizzes(StorageService.getQuizzes());
+  const loadQuizzes = async () => {
+    const data = await StorageService.getQuizzes();
+    setQuizzes(data);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -40,8 +41,8 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    StorageService.deleteQuiz(id);
+  const handleDelete = async (id: string) => {
+    await StorageService.deleteQuiz(id);
     setQuizzes(prev => prev.filter(q => q.id !== id));
     setShowDeleteConfirm(null);
   };

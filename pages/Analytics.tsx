@@ -19,24 +19,28 @@ export const Analytics: React.FC = () => {
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (id) {
-      setQuiz(StorageService.getQuiz(id) || null);
-      setSubmissions(StorageService.getSubmissions(id));
-    }
-    setLoading(false);
+    const loadData = async () => {
+        if (id) {
+          const q = await StorageService.getQuiz(id);
+          const s = await StorageService.getSubmissions(id);
+          setQuiz(q || null);
+          setSubmissions(s);
+        }
+        setLoading(false);
+    };
+    loadData();
   }, [id]);
 
-  // Clean up timeout on unmount
   useEffect(() => {
     return () => {
       if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
     };
   }, []);
 
-  const handleDeleteClick = (subId: string) => {
+  const handleDeleteClick = async (subId: string) => {
     if (deleteConfirmId === subId) {
         // Confirmed: Perform delete
-        StorageService.deleteSubmission(subId);
+        await StorageService.deleteSubmission(subId);
         setSubmissions(prev => prev.filter(s => s.id !== subId));
         setDeleteConfirmId(null);
         if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
@@ -52,7 +56,6 @@ export const Analytics: React.FC = () => {
   if (loading) return <div className="p-8">Loading...</div>;
   if (!quiz) return <div className="p-8">Quiz not found.</div>;
 
-  // Calculate Max Possible Score for the specific quiz
   const calculateMaxScore = (quizData: Quiz) => {
       let maxTotal = 0;
       quizData.questions.forEach(q => {
@@ -75,7 +78,6 @@ export const Analytics: React.FC = () => {
     maxPossible: maxPossibleScore
   };
 
-  // Helper to generate chart data for a question
   const getChartData = (question: any) => {
     if (question.type === QuestionType.TEXT) return null;
 
@@ -100,7 +102,6 @@ export const Analytics: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
           <div className="flex items-center text-gray-600 cursor-pointer hover:text-gray-900 mr-4" onClick={() => navigate('/admin')}>
@@ -111,7 +112,6 @@ export const Analytics: React.FC = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <p className="text-sm font-medium text-gray-500 uppercase">Total Submissions</p>
@@ -127,7 +127,6 @@ export const Analytics: React.FC = () => {
           </div>
         </div>
 
-        {/* Charts Section */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold text-gray-900">Response Distribution</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -159,7 +158,6 @@ export const Analytics: React.FC = () => {
           </div>
         </div>
 
-        {/* Data Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-bold text-gray-900">Submission Log</h2>
@@ -213,7 +211,6 @@ export const Analytics: React.FC = () => {
         </div>
       </main>
 
-      {/* Detail Modal */}
       {viewSubmission && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">

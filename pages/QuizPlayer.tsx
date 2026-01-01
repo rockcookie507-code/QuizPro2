@@ -13,11 +13,14 @@ export const QuizPlayer: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const q = StorageService.getQuiz(id);
-      setQuiz(q || null);
-    }
-    setLoading(false);
+    const fetchQuiz = async () => {
+        if (id) {
+            const q = await StorageService.getQuiz(id);
+            setQuiz(q || null);
+        }
+        setLoading(false);
+    };
+    fetchQuiz();
   }, [id]);
 
   const handleOptionChange = (questionId: string, optionId: string, type: QuestionType) => {
@@ -57,26 +60,21 @@ export const QuizPlayer: React.FC = () => {
     let maxPossible = 0;
 
     quiz.questions.forEach(q => {
-      // Calculate Max Possible Score for this question
       let qMax = 0;
-      const options = q.options || []; // Safe navigation
+      const options = q.options || [];
       
       if (q.type === QuestionType.SINGLE || q.type === QuestionType.TEXT) {
-        // For text/single, max is the highest individual option score
         if (options.length > 0) {
             qMax = Math.max(...options.map(o => o.score), 0);
         }
       } else if (q.type === QuestionType.MULTI) {
-        // Sum of all positive scores
         qMax = options.reduce((sum, o) => sum + (o.score > 0 ? o.score : 0), 0);
       }
       maxPossible += qMax;
 
-      // Calculate User Score
       const answer = answers[q.id];
       if (answer) {
         if (q.type === QuestionType.TEXT && answer.textAnswer) {
-            // Simple keyword matching (case insensitive)
             const userAnswer = answer.textAnswer.trim().toLowerCase();
             const matchedOption = options.find(o => o.text.trim().toLowerCase() === userAnswer);
             if (matchedOption) {
@@ -94,9 +92,8 @@ export const QuizPlayer: React.FC = () => {
     return { total, max: maxPossible };
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!quiz) return;
-    // Removed window.confirm to ensure smoother UX. The button says "Submit Answers" which is clear intent.
 
     const { total, max } = calculateScore();
     const submission: Submission = {
@@ -108,7 +105,7 @@ export const QuizPlayer: React.FC = () => {
       maxPossibleScore: max
     };
 
-    StorageService.submitQuiz(submission);
+    await StorageService.submitQuiz(submission);
     setSubmitted(submission);
     window.scrollTo(0,0);
   };
@@ -146,7 +143,6 @@ export const QuizPlayer: React.FC = () => {
                     <span className="font-medium text-gray-900">{new Date(submitted.timestamp).toLocaleDateString()}</span>
                 </div>
             </div>
-            {/* Removed the Take Another Quiz Button */}
           </div>
         </div>
       </div>
