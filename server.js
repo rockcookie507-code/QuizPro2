@@ -1,8 +1,12 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,7 +14,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'dist'))); // Assumes Vite/CRA build output is 'dist' or 'build'
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Initialize DB if not exists
 if (!fs.existsSync(DB_FILE)) {
@@ -46,13 +50,11 @@ const saveDb = (data) => fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)
 
 // --- API ROUTES ---
 
-// Get All Quizzes
 app.get('/api/quizzes', (req, res) => {
     const db = getDb();
     res.json(db.quizzes);
 });
 
-// Get Single Quiz
 app.get('/api/quizzes/:id', (req, res) => {
     const db = getDb();
     const quiz = db.quizzes.find(q => q.id === req.params.id);
@@ -60,7 +62,6 @@ app.get('/api/quizzes/:id', (req, res) => {
     else res.status(404).send('Not found');
 });
 
-// Save/Update Quiz
 app.post('/api/quizzes', (req, res) => {
     const db = getDb();
     const newQuiz = req.body;
@@ -76,7 +77,6 @@ app.post('/api/quizzes', (req, res) => {
     res.json({ success: true });
 });
 
-// Delete Quiz
 app.delete('/api/quizzes/:id', (req, res) => {
     const db = getDb();
     db.quizzes = db.quizzes.filter(q => q.id !== req.params.id);
@@ -85,7 +85,6 @@ app.delete('/api/quizzes/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// Submit Quiz
 app.post('/api/submissions', (req, res) => {
     const db = getDb();
     db.submissions.push(req.body);
@@ -93,14 +92,12 @@ app.post('/api/submissions', (req, res) => {
     res.json({ success: true });
 });
 
-// Get Submissions for a Quiz
 app.get('/api/submissions/:quizId', (req, res) => {
     const db = getDb();
     const subs = db.submissions.filter(s => s.quizId === req.params.quizId);
     res.json(subs);
 });
 
-// Delete Submission
 app.delete('/api/submissions/:id', (req, res) => {
     const db = getDb();
     db.submissions = db.submissions.filter(s => s.id !== req.params.id);
@@ -108,15 +105,9 @@ app.delete('/api/submissions/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// Handle SPA routing (return index.html for unknown routes)
+// Handle SPA routing
 app.get('*', (req, res) => {
-    const buildPath = path.join(__dirname, 'dist', 'index.html');
-    if (fs.existsSync(buildPath)) {
-        res.sendFile(buildPath);
-    } else {
-        // Fallback for local dev if dist doesn't exist yet
-        res.send('Server running. Please build the React app to dist/ folder.');
-    }
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
